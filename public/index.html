@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liftel of War</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d1117;
+  color: #fff;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ── CANVAS ── */
+#gameCanvas {
+  display: block;
+  width: 100vw;
+  max-width: 1200px;
+  height: auto;
+  border-bottom: 2px solid #222;
+}
+
+/* ── GAME HUD ── */
+#game-ui {
+  display: none;
+  width: 100%;
+  max-width: 1200px;
+  background: #161b22;
+  padding: 10px 16px;
+  gap: 12px;
+  flex-direction: column;
+}
+#hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+#gold-display {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffd700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#team-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.team-left  { background: #e67e22; color: #fff; }
+.team-right { background: #2980b9; color: #fff; }
+
+#timer { font-size: 16px; color: #aaa; font-variant-numeric: tabular-nums; }
+
+#buttons-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.section-label {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  padding-right: 4px;
+}
+.unit-btn, .device-btn {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 72px;
+}
+.unit-btn  { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+.device-btn { background: #0d2818; color: #56d364; border: 1px solid #1a4731; }
+.unit-btn:hover:not(:disabled)   { background: #30363d; transform: translateY(-1px); }
+.device-btn:hover:not(:disabled) { background: #1a4731; transform: translateY(-1px); }
+.unit-btn:disabled, .device-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.btn-emoji  { font-size: 18px; }
+.btn-cost   { font-size: 11px; color: #ffd700; }
+.btn-label  { font-size: 11px; }
+.divider { width: 1px; background: #30363d; height: 48px; margin: 0 4px; }
+
+/* ── LOBBY ── */
+#lobby {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  gap: 24px;
+  padding: 20px;
+}
+#lobby h1 {
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, #e67e22, #f39c12, #2980b9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+}
+#lobby .subtitle { color: #666; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; }
+.lobby-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 16px;
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lobby-card h2 { font-size: 18px; color: #8b949e; text-align: center; }
+.lobby-card input {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color .2s;
+}
+.lobby-card input:focus { border-color: #58a6ff; }
+.lobby-card input::placeholder { color: #484f58; }
+
+/* Department picker */
+#dept-picker { display: flex; gap: 12px; }
+.dept-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 10px;
+  border: 2px solid #30363d;
+  background: #0d1117;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  transition: all .2s;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dept-btn .dept-icon { font-size: 28px; display: block; margin-bottom: 6px; }
+.dept-btn.selected-marketing { border-color: #e67e22; background: #1a0e06; }
+.dept-btn.selected-idi        { border-color: #2980b9; background: #06121a; }
+.dept-btn:hover { border-color: #58a6ff; }
+
+/* Steps */
+.lobby-step { display: none; flex-direction: column; gap: 16px; }
+.lobby-step.active { display: flex; }
+
+.primary-btn {
+  background: linear-gradient(90deg, #e67e22, #d35400);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s, transform .15s;
+}
+.primary-btn:hover { opacity: .9; transform: translateY(-1px); }
+.primary-btn.blue { background: linear-gradient(90deg, #2980b9, #1a5276); }
+.secondary-btn {
+  background: transparent;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #8b949e;
+  padding: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.secondary-btn:hover { border-color: #58a6ff; color: #fff; }
+
+#room-code-display {
+  text-align: center;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: #ffd700;
+  background: #0d1117;
+  border-radius: 10px;
+  padding: 16px;
+}
+#waiting-msg { text-align: center; color: #8b949e; font-size: 14px; }
+.spinner {
+  width: 28px; height: 28px;
+  border: 3px solid #30363d;
+  border-top-color: #58a6ff;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#error-msg { color: #f85149; font-size: 13px; text-align: center; min-height: 18px; }
+
+/* Countdown overlay */
+#countdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+}
+#countdown-number {
+  font-size: 120px;
+  font-weight: 900;
+  color: #fff;
+  animation: popIn .4s ease;
+}
+@keyframes popIn {
+  from { transform: scale(1.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* Game over */
+#gameover-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 200;
+}
+#gameover-title { font-size: 56px; font-weight: 900; }
+#gameover-title.win  { color: #ffd700; }
+#gameover-title.lose { color: #f85149; }
+#gameover-sub { font-size: 18px; color: #8b949e; }
+</style>
+</head>
+<body>
+
+<!-- LOBBY -->
+<div id="lobby">
+  <h1>⚡ LIFTEL OF WAR</h1>
+  <p class="subtitle">Oficina vs Oficina</p>
+
+  <div class="lobby-card">
+    <div id="error-msg"></div>
+
+    <!-- Paso 1: nombre + departamento -->
+    <div id="step-dept" class="lobby-step active">
+      <h2>¿Quién eres?</h2>
+      <input id="input-name" type="text" placeholder="Tu nombre" maxlength="20">
+      <div id="dept-picker">
+        <div class="dept-btn" id="btn-marketing" onclick="selectDept('marketing')">
+          <span class="dept-icon">📣</span>
+          Marketing
+        </div>
+        <div class="dept-btn" id="btn-idi" onclick="selectDept('idi')">
+          <span class="dept-icon">🔬</span>
+          I+D+I
+        </div>
+      </div>
+      <button class="primary-btn" onclick="goToRoomStep()">Continuar →</button>
+    </div>
+
+    <!-- Paso 2: crear o unirse -->
+    <div id="step-room" class="lobby-step">
+      <h2>¿Crear o unirse?</h2>
+      <button class="primary-btn" onclick="createRoom()">🏠 Crear sala</button>
+      <div style="text-align:center;color:#444;font-size:12px">— o —</div>
+      <div style="display:flex;gap:8px">
+        <input id="input-code" type="text" placeholder="Código de sala (ej: LIFT-42)"
+          style="text-transform:uppercase;flex:1" maxlength="10">
+        <button class="primary-btn blue" style="flex:0 0 auto;padding:10px 16px" onclick="joinRoom()">Unirse</button>
+      </div>
+    </div>
+
+    <!-- Paso 3: esperando rival -->
+    <div id="step-waiting" class="lobby-step">
+      <h2>Sala creada</h2>
+      <div id="room-code-display">—</div>
+      <p id="waiting-msg">Comparte este código con tu rival</p>
+      <div class="spinner"></div>
+    </div>
+  </div>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="countdown-overlay">
+  <div id="countdown-number">3</div>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameover-overlay">
+  <div id="gameover-title">¡Victoria!</div>
+  <div id="gameover-sub"></div>
+  <button class="primary-btn" style="width:200px" onclick="location.reload()">Jugar de nuevo</button>
+</div>
+
+<!-- CANVAS -->
+<canvas id="gameCanvas" width="1200" height="500"></canvas>
+
+<!-- HUD -->
+<div id="game-ui">
+  <div id="hud">
+    <div id="gold-display">⚡ <span id="gold-val">150</span> presupuesto</div>
+    <div id="team-badge" class="team-left">Tu equipo: —</div>
+    <div id="timer">00:00</div>
+  </div>
+  <div id="buttons-row">
+    <span class="section-label">Unidades</span>
+    <button class="unit-btn" id="btn-becario"   onclick="G.trySpawnUnit('becario')">
+      <span class="btn-emoji">🧑‍💼</span><span class="btn-label">Becario</span><span class="btn-cost">25 💰</span>
+    </button>
+    <button class="unit-btn" id="btn-tecnico"   onclick="G.trySpawnUnit('tecnico')">
+      <span class="btn-emoji">🔧</span><span class="btn-label">Técnico</span><span class="btn-cost">50 💰</span>
+    </button>
+    <button class="unit-btn" id="btn-comercial" onclick="G.trySpawnUnit('comercial')">
+      <span class="btn-emoji">📊</span><span class="btn-label">Comercial</span><span class="btn-cost">80 💰</span>
+    </button>
+    <button class="unit-btn" id="btn-it"        onclick="G.trySpawnUnit('it')">
+      <span class="btn-emoji">💻</span><span class="btn-label">IT</span><span class="btn-cost">120 💰</span>
+    </button>
+    <button class="unit-btn" id="btn-manager"   onclick="G.trySpawnUnit('manager')">
+      <span class="btn-emoji">👔</span><span class="btn-label">Manager</span><span class="btn-cost">150 💰</span>
+    </button>
+    <div class="divider"></div>
+    <span class="section-label">Dispositivos</span>
+    <button class="device-btn" id="btn-ltm" onclick="G.tryDeployDevice('ltm')">
+      <span class="btn-emoji">📡</span><span class="btn-label">LTM</span><span class="btn-cost">100 💰 (+12/s)</span>
+    </button>
+    <button class="device-btn" id="btn-lta" onclick="G.tryDeployDevice('lta')">
+      <span class="btn-emoji">🔌</span><span class="btn-label">LTA</span><span class="btn-cost">220 💰 (+28/s)</span>
+    </button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="game.js"></script>
+<script src="socket-client.js"></script>
+</body>
+</html>
