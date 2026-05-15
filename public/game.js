@@ -68,7 +68,7 @@ const UNIT_DEFS = {
   },
   manager_mkt: {
     cost: 200, hp: 260, dmg: 32, spd: 35,  range: 38,  rate: 0.4,
-    label: 'Manager',     photo: 'marketing/manager.png',    action: '👑', type: 'convert',
+    label: 'Manager',     photo: 'marketing/manager.png',    action: '👑', type: 'convert', flying: true,
   },
   ejecutivo_mkt: {
     cost: 290, hp: 85,  dmg: 22, spd: 38,  range: 155, rate: 0.5,
