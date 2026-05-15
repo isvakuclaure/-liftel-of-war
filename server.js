@@ -9,6 +9,7 @@ const io = new Server(server);
 const PORT = 3067;
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/fotos', express.static(path.join(__dirname, 'fotos')));
 
 const rooms = new Map();
 
