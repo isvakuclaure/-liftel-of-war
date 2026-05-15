@@ -24,8 +24,9 @@ socket.on('room_created', ({ code, team }) => {
 
 socket.on('room_joined', ({ team, opponent }) => {
   _myTeam = team;
-  document.getElementById('waiting-msg').textContent =
-    `Unido — vs ${opponent.name} (${opponent.dept}). Esperando inicio...`;
+  showStep('step-loading');
+  document.getElementById('loading-msg').textContent =
+    `vs ${opponent.name} (${opponent.dept}) — Iniciando...`;
 });
 
 socket.on('opponent_joined', ({ name, dept }) => {
