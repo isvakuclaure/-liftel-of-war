@@ -352,18 +352,26 @@ class LiftelGame {
         continue;
       }
 
-      // Busca enemigo más cercano (melee no puede atacar voladores)
+      // Busca enemigo más cercano
+      // Reglas de targeting aire/suelo:
+      //   - Volador  → solo ataca a otros voladores (pasa de largo sobre el suelo)
+      //   - Ranged   → puede atacar tanto suelo como voladores (anti-aéreo)
+      //   - Melee    → solo ataca unidades de suelo
       let target = null, bestDist = Infinity;
       for (const e of alive) {
         if (e.team === u.team) continue;
-        if (e.flying && u.range < 65) continue; // melee no alcanza voladores
+        if (u.flying  && !e.flying)           continue; // volador ignora suelo
+        if (!u.flying && e.flying && u.range < 65) continue; // melee no alcanza aire
         const d = Math.abs(e.x - u.x);
         if (d < bestDist) { bestDist = d; target = e; }
       }
-      for (const dev of this.devices) {
-        if (dev.team === u.team) continue;
-        const d = Math.abs(dev.x - u.x);
-        if (d < bestDist) { bestDist = d; target = dev; }
+      // Dispositivos: solo unidades de suelo los atacan
+      if (!u.flying) {
+        for (const dev of this.devices) {
+          if (dev.team === u.team) continue;
+          const d = Math.abs(dev.x - u.x);
+          if (d < bestDist) { bestDist = d; target = dev; }
+        }
       }
 
       const eTowerX = u.team === 'left' ? RTX : LTX;
