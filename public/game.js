@@ -4,7 +4,7 @@ const GROUND_Y    = 390;
 const LTX = 105, RTX = 1695;
 const TW  = 72,  TH  = 220;
 const TOWER_MAX_HP = 1000;
-const SPAWN_L = 210, SPAWN_R = 1590;
+const SPAWN_L = LTX + TW/2, SPAWN_R = RTX - TW/2; // justo en la cara frontal de la torre
 const ZONE_L  = { min: 255, max: 680 };
 const ZONE_R  = { min: 1120, max: 1545 };
 const AURA_RADIUS = 120;
@@ -38,8 +38,8 @@ const UNIT_DEFS = {
     label: 'Programador', photo: 'it/programador.png',      action: '🗡️', type: 'melee',
   },
   serviciotec: {
-    cost: 130, hp: 140, dmg: 24, spd: 45,  range: 38,  rate: 0.55,
-    label: 'Serv. Téc.',  photo: 'it/serviciotecnico.jpg',  action: '🔨', type: 'melee',
+    cost: 130, hp: 140, dmg: 24, spd: 45,  range: 100, rate: 0.55,
+    label: 'Serv. Téc.',  photo: 'it/serviciotecnico.jpg',  action: '🔧', type: 'ranged',
   },
   manager_idi: {
     cost: 180, hp: 220, dmg: 8,  spd: 38,  range: 38,  rate: 0.45,
@@ -383,11 +383,12 @@ class LiftelGame {
           this._hit(u, target);
           u.atkTimer = 1 / u.rate;
         }
-      } else if (tDist <= TW / 2 + u.radius) {
+      } else if (tDist <= TW / 2 + u.radius + (u.flying ? 30 : 0)) {
         u.state = 'attack';
         if (u.atkTimer <= 0 && u.team === this.myTeam) {
           if (this.onTowerHit) this.onTowerHit({ damage: u.dmg });
-          this._burst(eTowerX, GROUND_Y - 80, '#e74c3c', 8);
+          const burstY = u.flying ? u.y : GROUND_Y - 80;
+          this._burst(eTowerX, burstY, '#e74c3c', 8);
           u.atkTimer = 1 / u.rate;
         }
       } else {
@@ -434,7 +435,7 @@ class LiftelGame {
     }
 
     // Proyectil visual para ranged
-    if (['comercial', 'vendedor', 'ejecutivo_idi'].includes(attacker.type)) {
+    if (['comercial', 'vendedor', 'ejecutivo_idi', 'serviciotec'].includes(attacker.type)) {
       this.projs.push({ x: attacker.x, y: attacker.y - 8,
         vx: attacker.team === 'left' ? 500 : -500, vy: -30, life: 0.2, color: '#f1c40f' });
     }
