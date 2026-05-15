@@ -21,7 +21,7 @@ body {
 #gameCanvas {
   display: block;
   width: 100vw;
-  max-width: 1200px;
+  max-width: 1800px;
   height: auto;
   border-bottom: 2px solid #222;
 }
@@ -30,7 +30,7 @@ body {
 #game-ui {
   display: none;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1800px;
   background: #161b22;
   padding: 10px 16px;
   gap: 12px;
@@ -68,6 +68,12 @@ body {
   flex-wrap: wrap;
   align-items: center;
 }
+.dept-units {
+  display: none;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
 .section-label {
   font-size: 11px;
   color: #666;
@@ -80,7 +86,7 @@ body {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 6px 10px;
   font-size: 13px;
   font-weight: 600;
   transition: all .15s;
@@ -95,6 +101,12 @@ body {
 .unit-btn:hover:not(:disabled)   { background: #30363d; transform: translateY(-1px); }
 .device-btn:hover:not(:disabled) { background: #1a4731; transform: translateY(-1px); }
 .unit-btn:disabled, .device-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.btn-photo {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #444;
+}
 .btn-emoji  { font-size: 18px; }
 .btn-cost   { font-size: 11px; color: #ffd700; }
 .btn-label  { font-size: 11px; }
@@ -208,6 +220,7 @@ body {
   padding: 16px;
 }
 #waiting-msg { text-align: center; color: #8b949e; font-size: 14px; }
+#loading-msg  { text-align: center; color: #8b949e; font-size: 14px; }
 .spinner {
   width: 28px; height: 28px;
   border: 3px solid #30363d;
@@ -274,11 +287,11 @@ body {
       <h2>¿Quién eres?</h2>
       <input id="input-name" type="text" placeholder="Tu nombre" maxlength="20">
       <div id="dept-picker">
-        <div class="dept-btn" id="btn-marketing" onclick="selectDept('marketing')">
+        <div class="dept-btn" id="btn-dept-marketing" onclick="selectDept('marketing')">
           <span class="dept-icon">📣</span>
           Marketing
         </div>
-        <div class="dept-btn" id="btn-idi" onclick="selectDept('idi')">
+        <div class="dept-btn" id="btn-dept-idi" onclick="selectDept('idi')">
           <span class="dept-icon">🔬</span>
           I+D+I
         </div>
@@ -298,12 +311,19 @@ body {
       </div>
     </div>
 
-    <!-- Paso 3: esperando rival -->
+    <!-- Paso 3: esperando rival (creador) -->
     <div id="step-waiting" class="lobby-step">
       <h2>Sala creada</h2>
       <div id="room-code-display">—</div>
       <p id="waiting-msg">Comparte este código con tu rival</p>
       <div class="spinner"></div>
+    </div>
+
+    <!-- Paso 4: unido, esperando inicio (quien se une) -->
+    <div id="step-loading" class="lobby-step">
+      <h2>¡Conectado!</h2>
+      <div class="spinner"></div>
+      <p id="loading-msg">Conectando con rival...</p>
     </div>
   </div>
 </div>
@@ -321,39 +341,85 @@ body {
 </div>
 
 <!-- CANVAS -->
-<canvas id="gameCanvas" width="1200" height="500"></canvas>
+<canvas id="gameCanvas" width="1800" height="500"></canvas>
 
 <!-- HUD -->
 <div id="game-ui">
   <div id="hud">
-    <div id="gold-display">⚡ <span id="gold-val">150</span> presupuesto</div>
+    <div id="gold-display">⚡ <span id="gold-val">50</span> presupuesto</div>
     <div id="team-badge" class="team-left">Tu equipo: —</div>
     <div id="timer">00:00</div>
   </div>
   <div id="buttons-row">
     <span class="section-label">Unidades</span>
-    <button class="unit-btn" id="btn-becario"   onclick="G.trySpawnUnit('becario')">
-      <span class="btn-emoji">🧑‍💼</span><span class="btn-label">Becario</span><span class="btn-cost">25 💰</span>
-    </button>
-    <button class="unit-btn" id="btn-tecnico"   onclick="G.trySpawnUnit('tecnico')">
-      <span class="btn-emoji">🔧</span><span class="btn-label">Técnico</span><span class="btn-cost">50 💰</span>
-    </button>
-    <button class="unit-btn" id="btn-comercial" onclick="G.trySpawnUnit('comercial')">
-      <span class="btn-emoji">📊</span><span class="btn-label">Comercial</span><span class="btn-cost">80 💰</span>
-    </button>
-    <button class="unit-btn" id="btn-it"        onclick="G.trySpawnUnit('it')">
-      <span class="btn-emoji">💻</span><span class="btn-label">IT</span><span class="btn-cost">120 💰</span>
-    </button>
-    <button class="unit-btn" id="btn-manager"   onclick="G.trySpawnUnit('manager')">
-      <span class="btn-emoji">👔</span><span class="btn-label">Manager</span><span class="btn-cost">150 💰</span>
-    </button>
+
+    <!-- I+D+I -->
+    <div id="units-idi" class="dept-units">
+      <button class="unit-btn" id="btn-programador" onclick="G.trySpawnUnit('programador')">
+        <img src="/fotos/it/programador.png" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Programador</span>
+        <span class="btn-cost">80 💰 🗡️</span>
+      </button>
+      <button class="unit-btn" id="btn-serviciotec" onclick="G.trySpawnUnit('serviciotec')">
+        <img src="/fotos/it/serviciotecnico.jpg" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Serv. Téc.</span>
+        <span class="btn-cost">130 💰 🔨</span>
+      </button>
+      <button class="unit-btn" id="btn-manager_idi" onclick="G.trySpawnUnit('manager_idi')">
+        <img src="/fotos/it/manager.png" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Manager IT</span>
+        <span class="btn-cost">180 💰 🛡️</span>
+      </button>
+      <button class="unit-btn" id="btn-devops" onclick="G.trySpawnUnit('devops')">
+        <img src="/fotos/it/devops.png" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">DevOps</span>
+        <span class="btn-cost">210 💰 📦</span>
+      </button>
+      <button class="unit-btn" id="btn-ejecutivo_idi" onclick="G.trySpawnUnit('ejecutivo_idi')">
+        <img src="/fotos/it/ejecutivo.jpg" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Ejecutivo</span>
+        <span class="btn-cost">290 💰 ⚡</span>
+      </button>
+    </div>
+
+    <!-- Marketing -->
+    <div id="units-marketing" class="dept-units">
+      <button class="unit-btn" id="btn-atendedor" onclick="G.trySpawnUnit('atendedor')">
+        <img src="/fotos/marketing/atentededor.png" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Atendedor</span>
+        <span class="btn-cost">60 💰 🗡️</span>
+      </button>
+      <button class="unit-btn" id="btn-comercial" onclick="G.trySpawnUnit('comercial')">
+        <img src="/fotos/marketing/comercial.jpg" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Comercial</span>
+        <span class="btn-cost">95 💰 🏹</span>
+      </button>
+      <button class="unit-btn" id="btn-vendedor" onclick="G.trySpawnUnit('vendedor')">
+        <img src="/fotos/marketing/vendedor.png" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Vendedor</span>
+        <span class="btn-cost">170 💰 🎯</span>
+      </button>
+      <button class="unit-btn" id="btn-manager_mkt" onclick="G.trySpawnUnit('manager_mkt')">
+        <img src="/fotos/marketing/manager.png" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Manager</span>
+        <span class="btn-cost">200 💰 👑</span>
+      </button>
+      <button class="unit-btn" id="btn-ejecutivo_mkt" onclick="G.trySpawnUnit('ejecutivo_mkt')">
+        <img src="/fotos/marketing/ejecutivo.png" class="btn-photo" onerror="this.style.display='none'">
+        <span class="btn-label">Ejecutivo</span>
+        <span class="btn-cost">290 💰 📋</span>
+      </button>
+    </div>
+
     <div class="divider"></div>
     <span class="section-label">Dispositivos</span>
     <button class="device-btn" id="btn-ltm" onclick="G.tryDeployDevice('ltm')">
-      <span class="btn-emoji">📡</span><span class="btn-label">LTM</span><span class="btn-cost">100 💰 (+12/s)</span>
+      <img src="/fotos/productos/ltm.png" class="btn-photo" onerror="this.style.display='none'">
+      <span class="btn-label">LTM</span><span class="btn-cost">100 💰 (+12/s)</span>
     </button>
     <button class="device-btn" id="btn-lta" onclick="G.tryDeployDevice('lta')">
-      <span class="btn-emoji">🔌</span><span class="btn-label">LTA</span><span class="btn-cost">220 💰 (+28/s)</span>
+      <img src="/fotos/productos/lta.png" class="btn-photo" onerror="this.style.display='none'">
+      <span class="btn-label">LTA</span><span class="btn-cost">220 💰 (+28/s)</span>
     </button>
   </div>
 </div>
